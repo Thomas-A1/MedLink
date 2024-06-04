@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "1082814269313",
+    "project_id": "medlink-aa15b",
+    "storage_bucket": "medlink-aa15b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082814269313:android:e58ded0719cdd5f568ca80",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082814269313-169r9tugh0ndqdieu08ih9fg394ma9o9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.myapp",
+            "certificate_hash": "df898dc27a5ec6ca72e75b861fedc68092cf4267"
+          }
+        },
+        {
+          "client_id": "1082814269313-bsosl3bc6krufhhicc7pm95skjql2iok.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLVmi21ukCxRuWCjDR_AoquYd0I9XgKwo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082814269313-bsosl3bc6krufhhicc7pm95skjql2iok.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1082814269313-86okftbnbmputfv34uaf8mjoohdjib29.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.myapp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
