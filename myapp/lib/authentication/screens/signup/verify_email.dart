@@ -1,14 +1,20 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:myapp/authentication/screens/login/login.dart';
-import 'package:myapp/authentication/screens/signup/success_screen.dart';
+import 'package:myapp/authentication/controllers/signup/verify_email_controller.dart';
+// import 'package:myapp/authentication/screens/login/login.dart';
+// import 'package:myapp/authentication/screens/signup/success_screen.dart';
+import 'package:myapp/data/repositories/authentication_repository.dart';
 
 class VerifyEmailScreen extends StatelessWidget {
-  const VerifyEmailScreen({super.key});
+  const VerifyEmailScreen({super.key, this.email});
+
+  final String? email;
 
   @override
   Widget build(BuildContext context) {
+    // Create instance for the first time, unlike Get.find which creates the instance at all times
+    final controller = Get.put(VerifyEmailController());
     return Scaffold(
       appBar: AppBar(
         // removing back button
@@ -16,19 +22,19 @@ class VerifyEmailScreen extends StatelessWidget {
 
         actions: [
           IconButton(
-              onPressed: () => Get.offAll(() => const LoginScreen()),
+              onPressed: () => AuthenticationRepository.instance.logout(),
               icon: const Icon(CupertinoIcons.clear))
         ],
       ),
       body: SingleChildScrollView(
         //MediaQuery.of(Get.Context!).size.width
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Column(
             children: [
               // Image
               Image(
-                image: AssetImage("assets/images/verify_email.gif"),
+                image: const AssetImage("assets/images/verify_email.gif"),
                 width: MediaQuery.of(Get.context!).size.width * 0.6,
               ),
               const SizedBox(
@@ -48,7 +54,7 @@ class VerifyEmailScreen extends StatelessWidget {
                 height: 16,
               ),
               Text(
-                'support@medlink.com',
+                email ?? '',
                 style: Theme.of(context).textTheme.labelLarge,
                 textAlign: TextAlign.center,
               ),
@@ -72,15 +78,8 @@ class VerifyEmailScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 45,
                 child: ElevatedButton(
-                  onPressed: () => Get.to(
-                    () => SuccessScreen(
-                      image: "assets/images/welcome.png",
-                      title: "Your account successfully created!",
-                      subTitle:
-                          "Welcome to MedLink: Unleash the joy of a hassle-free search for the pharmacies stocked with the medications you need!",
-                      onPressed: () => Get.to(() => const LoginScreen()),
-                    ),
-                  ),
+                  // Success screen
+                  onPressed: () => controller.checkEmailVerificationStatus(),
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
                     backgroundColor: Colors.blue, // Text color
@@ -103,7 +102,7 @@ class VerifyEmailScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => controller.sendEmailVerification(),
                   child: const Text(
                     "Resend Email",
                     style: TextStyle(

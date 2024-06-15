@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:myapp/authentication/controllers/login/login_controller.dart';
 import 'package:myapp/authentication/screens/signup/signup.dart';
 import 'package:myapp/password_configuration/forget_password.dart';
+import 'package:myapp/validators/FormValidation.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.put(LoginController());
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
@@ -46,15 +49,17 @@ class LoginScreen extends StatelessWidget {
                   )
                 ],
               ),
-
               // Form
               Form(
+                key: controller.loginFormKey,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32),
                   child: Column(
                     children: [
                       // Email
                       TextFormField(
+                        controller: controller.email,
+                        validator: (value) => FormValidation.validateEmail(value),
                         decoration: const InputDecoration(
                           prefixIcon: Icon(Iconsax.direct_right),
                           labelText: "Email",
@@ -66,13 +71,29 @@ class LoginScreen extends StatelessWidget {
                       ),
 
                       // Password
-                      TextFormField(
-                        decoration: const InputDecoration(
+                    Obx(
+                      // Toggling password hidden/shown
+                      
+                      () => TextFormField(
+                        obscureText: controller.hidepassword.value,
+                        controller: controller.password,
+                        validator: (value) =>
+                            FormValidation.validatePassword(value),
+                        decoration: InputDecoration(
                           prefixIcon: Icon(Iconsax.password_check),
                           labelText: "Password",
-                          suffixIcon: Icon(Iconsax.eye_slash),
+                          suffixIcon: IconButton(
+                              onPressed: () => controller.hidepassword.value =
+                                  !controller.hidepassword.value,
+                              icon: Icon(
+                                controller.hidepassword.value
+                                    ? Iconsax.eye_slash
+                                    : Iconsax.eye,
+                              ),
+                            ),
                         ),
                       ),
+                    ),
                       const SizedBox(
                         height: 8,
                       ),
@@ -84,7 +105,7 @@ class LoginScreen extends StatelessWidget {
                           // Remember Me
                           Row(
                             children: [
-                              Checkbox(value: true, onChanged: (value) {}),
+                              Obx(() => Checkbox(value: controller.rememberMe.value, onChanged: (value) => controller.rememberMe.value = !controller.rememberMe.value)),
                               const Text("Remember Me")
                             ],
                           ),
@@ -106,7 +127,7 @@ class LoginScreen extends StatelessWidget {
                         width: double.infinity,
                         height: 45,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () => controller.emailAndPasswordSignIn(),
                           style: ElevatedButton.styleFrom(
                             foregroundColor: Colors.white,
                             backgroundColor: Colors.blue, // Text color

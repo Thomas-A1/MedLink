@@ -23,12 +23,8 @@ class SignUpController extends GetxController {
   GlobalKey<FormState> signupFormKey = GlobalKey<FormState>();
 
   // SignUp
-  Future<void> signUp() async {
+  void signUp() async {
     try {
-      // Start Loading
-      FullScreenLoader.openLoadingDialog(
-          'We are processing your information...', 'assets/images/docer.gif');
-
       // Check Internet Connectivity
       final isConnected = await NetworkManager.instance.isConnected();
       if (!isConnected) {
@@ -39,7 +35,7 @@ class SignUpController extends GetxController {
       // Form Validation
       if (!signupFormKey.currentState!.validate()) {
         // Remove Loader
-        FullScreenLoader.stopLoading();
+        // FullScreenLoader.stopLoading();
         return;
       }
 
@@ -52,6 +48,10 @@ class SignUpController extends GetxController {
         );
         return;
       }
+
+      // Start Loading
+      FullScreenLoader.openLoadingDialog(
+          'We are processing your information...', 'assets/images/animations/docer.json');
 
       // Register user in the firebase Authentication and firebase
       final userCredential =
@@ -84,7 +84,7 @@ class SignUpController extends GetxController {
       );
 
       // Move to verify Email Screen
-      Get.to(() => const VerifyEmailScreen());
+      Get.to(() => VerifyEmailScreen(email: email.text.trim(),));
     } catch (e) {
       // Remove Loader
       FullScreenLoader.stopLoading();
@@ -92,8 +92,6 @@ class SignUpController extends GetxController {
       //Show some Generioc Error to the user
       Loaders.errorSnackBar(title: 'Oh Snap!', message: e.toString());
     }
-    // finally {
-    //   FullScreenLoader.stopLoading();
-    // }
+    
   }
 }
