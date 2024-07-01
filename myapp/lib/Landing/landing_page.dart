@@ -15,6 +15,7 @@ class _LandingPageState extends State<LandingPage> {
   Location _locationController = new Location();
   GoogleMapController? _mapController;
   final LatLng _initialPosition = const LatLng(5.7583804, -0.21917);
+  Map<String, Marker> _markers = {};
   LatLng? current_position = null;
 
   @override
@@ -59,6 +60,7 @@ class _LandingPageState extends State<LandingPage> {
           current_position =
               LatLng(currentLocation.latitude!, currentLocation.longitude!);
           print(current_position);
+          _updateCurrentLocationMarker("_currentLocation", current_position!);
           // Do not move the camera here to allow free map movement
         });
       }
@@ -77,15 +79,29 @@ class _LandingPageState extends State<LandingPage> {
     } else {
       Loaders.warningSnackBar(
         title: 'Ooops...',
-        message: "Current location not available",
+        message: "Current location not available. Turn on Location on device",
       );
     }
+  }
+
+  Future<void> _updateCurrentLocationMarker(String id, LatLng location) async {
+    var markerIcon = await BitmapDescriptor.fromAssetImage(
+        const ImageConfiguration(), 'assets/images/examination.png');
+    var marker = Marker(
+      markerId: MarkerId(id),
+      position: location,
+      icon: markerIcon,
+      infoWindow: const InfoWindow(title: 'Current Location'),
+    );
+    _markers[id] = marker;
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final sidebarWidth = screenWidth * 0.75;
+    // final LatLng _initialPosition = current_position!;
 
     return Scaffold(
       body: Stack(
@@ -97,16 +113,12 @@ class _LandingPageState extends State<LandingPage> {
             ),
             onMapCreated: (controller) {
               _mapController = controller;
+              if (current_position != null) {
+                _updateCurrentLocationMarker(
+                    "_currentLocation", current_position!);
+              }
             },
-            markers: current_position != null
-                ? {
-                    Marker(
-                      markerId: MarkerId("_currentLocation"),
-                      icon: BitmapDescriptor.defaultMarker,
-                      position: current_position!,
-                    ),
-                  }
-                : {},
+            markers: _markers.values.toSet(),
           ),
           Positioned(
             top: 50,
@@ -380,7 +392,6 @@ class _LandingPageState extends State<LandingPage> {
                                     ],
                                   ),
                                 ),
-
                                 ListTile(
                                   title: Text('Support'),
                                   leading: Icon(Icons.support),

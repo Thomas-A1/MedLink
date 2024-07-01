@@ -51,6 +51,7 @@ dependencies:
   firebase_core: ^2.32.0
   firebase_auth: ^4.20.0
   cloud_firestore: ^4.17.5
+  geocoding: ^3.0.0
   # google_maps_flutter: ^2.1.0
 
 dev_dependencies:
