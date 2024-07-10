@@ -59,7 +59,8 @@ class LoginScreen extends StatelessWidget {
                       // Email
                       TextFormField(
                         controller: controller.email,
-                        validator: (value) => FormValidation.validateEmail(value),
+                        validator: (value) =>
+                            FormValidation.validateEmail(value),
                         decoration: const InputDecoration(
                           prefixIcon: Icon(Iconsax.direct_right),
                           labelText: "Email",
@@ -71,18 +72,18 @@ class LoginScreen extends StatelessWidget {
                       ),
 
                       // Password
-                    Obx(
-                      // Toggling password hidden/shown
-                      
-                      () => TextFormField(
-                        obscureText: controller.hidepassword.value,
-                        controller: controller.password,
-                        validator: (value) =>
-                            FormValidation.validatePassword(value),
-                        decoration: InputDecoration(
-                          prefixIcon: Icon(Iconsax.password_check),
-                          labelText: "Password",
-                          suffixIcon: IconButton(
+                      Obx(
+                        // Toggling password hidden/shown
+
+                        () => TextFormField(
+                          obscureText: controller.hidepassword.value,
+                          controller: controller.password,
+                          validator: (value) =>
+                              FormValidation.validatePassword(value),
+                          decoration: InputDecoration(
+                            prefixIcon: Icon(Iconsax.password_check),
+                            labelText: "Password",
+                            suffixIcon: IconButton(
                               onPressed: () => controller.hidepassword.value =
                                   !controller.hidepassword.value,
                               icon: Icon(
@@ -91,9 +92,9 @@ class LoginScreen extends StatelessWidget {
                                     : Iconsax.eye,
                               ),
                             ),
+                          ),
                         ),
                       ),
-                    ),
                       const SizedBox(
                         height: 8,
                       ),
@@ -105,7 +106,10 @@ class LoginScreen extends StatelessWidget {
                           // Remember Me
                           Row(
                             children: [
-                              Obx(() => Checkbox(value: controller.rememberMe.value, onChanged: (value) => controller.rememberMe.value = !controller.rememberMe.value)),
+                              Obx(() => Checkbox(
+                                  value: controller.rememberMe.value,
+                                  onChanged: (value) => controller.rememberMe
+                                      .value = !controller.rememberMe.value)),
                               const Text("Remember Me")
                             ],
                           ),
@@ -221,7 +225,10 @@ class LoginScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(100),
                     ),
                     child: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        print("Google sign-in button pressed");
+                        controller.googleSignIn();
+                      },
                       icon: const Image(
                         width: 24,
                         height: 24,

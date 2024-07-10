@@ -1,9 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:myapp/data/repositories/authentication_repository.dart';
 import 'package:myapp/helpers/network_manager.dart';
+import 'package:myapp/personal/controllers/user_controller.dart';
 import 'package:myapp/utils/loaders/loaders.dart';
 import 'package:myapp/utils/popups/full_screen_loader.dart';
 
@@ -15,7 +15,7 @@ class LoginController extends GetxController {
   final email = TextEditingController();
   final password = TextEditingController();
   GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
-
+  final userController = Get.put(UserController());
   // Email and Password Sign In
   Future<void> emailAndPasswordSignIn() async {
     try {
@@ -50,6 +50,41 @@ class LoginController extends GetxController {
       FullScreenLoader.stopLoading();
 
       // Redirect
+      AuthenticationRepository.instance.screenRedirect();
+    } catch (e) {
+      FullScreenLoader.stopLoading();
+      Loaders.errorSnackBar(title: 'Ooops...', message: e.toString());
+    }
+  }
+
+  Future<void> googleSignIn() async {
+    try {
+      print("Signing in with Google...");
+      FullScreenLoader.openLoadingDialog(
+        'Signing you in...',
+        'assets/images/animations/docer.json',
+      );
+
+      // Check internet connectivity
+      final isConnected = await NetworkManager.instance.isConnected();
+      if (!isConnected) {
+        FullScreenLoader.stopLoading();
+        Loaders.errorSnackBar(
+          title: 'Ooops...',
+          message: 'No internet connection',
+        );
+        return;
+      }
+
+      // Google Authentication
+      final userCredentials =
+          await AuthenticationRepository.instance.signInwithGoogle();
+
+      // Save record
+      await userController.SaveUserRecord(userCredentials);
+
+      FullScreenLoader.stopLoading();
+
       AuthenticationRepository.instance.screenRedirect();
     } catch (e) {
       FullScreenLoader.stopLoading();

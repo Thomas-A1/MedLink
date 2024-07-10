@@ -1,10 +1,18 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:myapp/authentication/controllers/RecentSearch/recentSearch_Controller.dart';
 import 'package:myapp/authentication/screens/profile/user_profile.dart';
+import 'package:myapp/data/repositories/pharmacies/pharmacy_repository.dart';
+import 'package:myapp/models/pharmacy_model.dart';
 import 'package:myapp/utils/loaders/loaders.dart';
+import 'package:myapp/widgets/CustomInfoWindow.dart';
+import 'package:custom_info_window/custom_info_window.dart';
+import 'package:myapp/authentication/screens/DrugSearch/drugsearch.dart';
 
 class LandingPage extends StatefulWidget {
   @override
@@ -16,12 +24,22 @@ class _LandingPageState extends State<LandingPage> {
   GoogleMapController? _mapController;
   final LatLng _initialPosition = const LatLng(5.7583804, -0.21917);
   Map<String, Marker> _markers = {};
+  late Future<List<Pharmacy>> _pharmacies;
   LatLng? current_position = null;
+  Pharmacy? _selectedPharmacy;
+  LatLng? _selectedPharmacyPosition;
+  Offset? _infoWindowPosition;
+  CustomInfoWindowController _customInfoWindowController =
+      CustomInfoWindowController();
+  final RecentSearchesController _recentSearchesController =
+      Get.put(RecentSearchesController());
 
   @override
   void initState() {
     super.initState();
     getLocationUpdates();
+    _pharmacies = PharmacyRepository.instance.getPharmacies();
+    fetchPharmacies();
   }
 
   bool _isSidebarOpen = false;
@@ -85,23 +103,130 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Future<void> _updateCurrentLocationMarker(String id, LatLng location) async {
-    var markerIcon = await BitmapDescriptor.fromAssetImage(
-        const ImageConfiguration(), 'assets/images/examination.png');
+    var customMarkerIcon = await _createCustomMarkerIconWithHighlight(
+        'assets/images/man.png', 80, 80, 100, Colors.blue, Colors.blue);
     var marker = Marker(
       markerId: MarkerId(id),
       position: location,
-      icon: markerIcon,
+      icon: customMarkerIcon,
       infoWindow: const InfoWindow(title: 'Current Location'),
     );
     _markers[id] = marker;
     setState(() {});
   }
 
+  Future<BitmapDescriptor> _createCustomMarkerIconWithHighlight(
+      String imagePath,
+      int width,
+      int height,
+      double radius,
+      Color shadowColor,
+      Color circleColor) async {
+    ByteData data = await rootBundle.load(imagePath);
+    Uint8List bytes = data.buffer.asUint8List();
+    ui.Codec codec = await ui.instantiateImageCodec(bytes,
+        targetWidth: width, targetHeight: height);
+    ui.FrameInfo frameInfo = await codec.getNextFrame();
+    ui.Image image = frameInfo.image;
+
+    // Radius of the custom marker
+    final double size = radius;
+
+    // Create a picture recorder to record the drawing commands
+    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(pictureRecorder);
+
+    // Draw the shadow circle
+    final Paint shadowPaint = Paint()
+      ..color = shadowColor.withOpacity(0.4)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(size / 2, size / 2 + 4), size / 2 + 10,
+        shadowPaint); // Offset for shadow effect and increase glow size
+
+    // Draw the blue circle
+    final Paint circlePaint = Paint()
+      ..color = circleColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
+
+    // Draw the white circle inside the blue circle to create a border effect
+    final Paint whiteCirclePaint = Paint()
+      ..color = const ui.Color.fromARGB(255, 235, 233, 233)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+        Offset(size / 2, size / 2), (size / 2) - 4, whiteCirclePaint);
+
+    // Draw the resized image in the center of the circle
+    final double imageOffset = (size - width) / 2;
+    canvas.drawImage(image, Offset(imageOffset, imageOffset), Paint());
+
+    // Convert the recorded picture into an image
+    final ui.Picture picture = pictureRecorder.endRecording();
+    final ui.Image markerImage =
+        await picture.toImage(size.toInt(), size.toInt());
+
+    // Convert the image to byte data
+    final ByteData? byteData =
+        await markerImage.toByteData(format: ui.ImageByteFormat.png);
+    final Uint8List markerBytes = byteData!.buffer.asUint8List();
+
+    return BitmapDescriptor.fromBytes(markerBytes);
+  }
+
+  // Have the pharmacy markers applied on all the pharmacies from the database
+  void fetchPharmacies() async {
+    List<Pharmacy> pharmacies = await _pharmacies;
+    for (Pharmacy pharmacy in pharmacies) {
+      _addPharmacyMarker(pharmacy);
+    }
+  }
+
+  // Custom Pharmacy Marker
+  void _addPharmacyMarker(Pharmacy pharmacy) async {
+    var customMarkerIcon = await _createCustomMarkerIconWithHighlight(
+        'assets/images/drugstore.png',
+        105,
+        100,
+        140,
+        ui.Color.fromARGB(255, 227, 60, 60),
+        ui.Color.fromARGB(255, 227, 60, 60));
+
+    var marker = Marker(
+      markerId: MarkerId(pharmacy.id),
+      position: pharmacy.location,
+      icon: customMarkerIcon,
+      onTap: () {
+        _customInfoWindowController.addInfoWindow!(
+          MCustomInfoWindow(
+            pharmacy: pharmacy,
+          ),
+          pharmacy.location,
+        );
+
+        // Update the selected pharmacy and its position
+        setState(() {
+          _selectedPharmacy = pharmacy;
+          _selectedPharmacyPosition = pharmacy.location;
+        });
+      },
+    );
+
+    setState(() {
+      _markers[pharmacy.id] = marker;
+    });
+  }
+
+  void _onMapTap(LatLng position) {
+    setState(() {
+      _selectedPharmacy = null;
+      _selectedPharmacyPosition = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final sidebarWidth = screenWidth * 0.75;
-    // final LatLng _initialPosition = current_position!;
 
     return Scaffold(
       body: Stack(
@@ -109,16 +234,29 @@ class _LandingPageState extends State<LandingPage> {
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: _initialPosition,
-              zoom: 13.0,
+              zoom: 16.0,
             ),
             onMapCreated: (controller) {
               _mapController = controller;
+              _customInfoWindowController.googleMapController = controller;
               if (current_position != null) {
                 _updateCurrentLocationMarker(
                     "_currentLocation", current_position!);
               }
             },
-            markers: _markers.values.toSet(),
+            markers: Set<Marker>.of(_markers.values),
+            onTap: (position) {
+              _customInfoWindowController.hideInfoWindow!();
+            },
+            onCameraMove: (position) {
+              _customInfoWindowController.onCameraMove!();
+            },
+          ),
+          CustomInfoWindow(
+            controller: _customInfoWindowController,
+            height: 180,
+            width: 260,
+            offset: 40,
           ),
           Positioned(
             top: 50,
@@ -143,7 +281,7 @@ class _LandingPageState extends State<LandingPage> {
           ),
           // Location Button
           Positioned(
-            bottom: 350,
+            bottom: 380,
             right: 20,
             child: Container(
               decoration: const BoxDecoration(
@@ -188,7 +326,7 @@ class _LandingPageState extends State<LandingPage> {
                   // Grey Rectangular Box
                   Center(
                     child: Container(
-                      height: 4,
+                      height: 3,
                       width: 60,
                       decoration: BoxDecoration(
                         color: Colors.grey[400],
@@ -198,30 +336,39 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                   const SizedBox(height: 18),
                   // Search Bar
-                  Container(
-                    height: 60, // Set the desired height here
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search for a drug',
-                        hintStyle: const TextStyle(fontSize: 16),
-                        prefixIcon: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              shape: BoxShape.circle,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => DrugSearch()),
+                      );
+                    },
+                    child: Container(
+                      height: 60, // Set the desired height here
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.search, size: 24),
                             ),
-                            child: const Icon(Icons.search, size: 24),
                           ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 20), // Adjust vertical padding
-                        border: InputBorder.none,
+                          const Text(
+                            'Search for a drug',
+                            style:
+                                TextStyle(fontSize: 16, color: Colors.black54),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -237,62 +384,50 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                   ),
                   const SizedBox(height: 16), // Adjust spacing here
-                  ListView(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero, // Remove default padding
-                    physics:
-                        const NeverScrollableScrollPhysics(), // Disable scrolling
-                    children: [
-                      ListTile(
-                        contentPadding:
-                            EdgeInsets.zero, // Remove ListTile padding
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.access_time,
-                              color: Colors.black),
-                        ),
-                        title: const Text('Location 1'),
-                        onTap: () {
-                          // Handle location tap
-                        },
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.access_time,
-                              color: Colors.black),
-                        ),
-                        title: const Text('Location 2'),
-                        onTap: () {
-                          // Handle location tap
-                        },
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.access_time,
-                              color: Colors.black),
-                        ),
-                        title: const Text('Location 3'),
-                        onTap: () {
-                          // Handle location tap
-                        },
-                      ),
-                    ],
+                  SizedBox(
+                    height: 200, // Set a fixed height for the container
+                    child: Obx(
+                      () {
+                        final recentSearches =
+                            _recentSearchesController.recentSearches;
+                        final recentSearchesToShow = recentSearches.length > 3
+                            ? recentSearches.sublist(0, 3)
+                            : recentSearches;
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          padding: EdgeInsets.zero,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: recentSearchesToShow.length,
+                          itemBuilder: (context, index) {
+                            String search = recentSearchesToShow[index];
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.access_time,
+                                    color: Colors.black),
+                              ),
+                              title: Text(search),
+                              onTap: () {
+                                // Navigate to DrugSearch page and populate search input
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DrugSearch(
+                                      initialSearch: search,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -438,3 +573,55 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 }
+
+// import 'package:flutter/material.dart';
+// import 'package:myapp/data/repositories/pharmacies/pharmacy_repository.dart';
+// import 'package:myapp/models/pharmacy_model.dart';
+
+// class LandingPage extends StatefulWidget {
+//   @override
+//   _LandingPageState createState() => _LandingPageState();
+// }
+
+// class _LandingPageState extends State<LandingPage> {
+//   late Future<List<Pharmacy>> _pharmacies;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _pharmacies = PharmacyRepository.instance.getPharmacies();
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: Text('Pharmacy Test'),
+//       ),
+//       body: FutureBuilder<List<Pharmacy>>(
+//         future: _pharmacies,
+//         builder: (context, snapshot) {
+//           if (snapshot.connectionState == ConnectionState.waiting) {
+//             return Center(child: CircularProgressIndicator());
+//           } else if (snapshot.hasError) {
+//             return Center(child: Text('Error: ${snapshot.error}'));
+//           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+//             return Center(child: Text('No pharmacies found.'));
+//           } else {
+//             List<Pharmacy> pharmacies = snapshot.data!;
+//             return ListView.builder(
+//               itemCount: pharmacies.length,
+//               itemBuilder: (context, index) {
+//                 Pharmacy pharmacy = pharmacies[index];
+//                 return ListTile(
+//                   title: Text(pharmacy.name),
+//                   subtitle: Text(pharmacy.phone),
+//                 );
+//               },
+//             );
+//           }
+//         },
+//       ),
+//     );
+//   }
+// }

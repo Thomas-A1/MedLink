@@ -40,7 +40,7 @@ dependencies:
   get: ^4.6.5
   get_storage: ^2.1.1
   lottie: ^2.7.0
-  http: ^1.2.1
+  http: ^0.13.6
   intl: ^0.19.0
   # connectivity_plus: ^6.0.3
   connectivity_plus: ^5.0.1
@@ -52,6 +52,12 @@ dependencies:
   firebase_auth: ^4.20.0
   cloud_firestore: ^4.17.5
   geocoding: ^3.0.0
+  custom_info_window: ^1.0.1
+  csv: ^6.0.0
+  algolia: ^1.1.2
+  google_sign_in: ^6.2.1
+  # sensors_plus: ^5.0.1
+  # vector_math: ^2.1.4
   # google_maps_flutter: ^2.1.0
 
 dev_dependencies:
@@ -85,6 +91,7 @@ flutter:
     - assets/images/
     - assets/images/onboarding_images/
     - assets/images/animations/
+    - assets/drugbank.csv
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

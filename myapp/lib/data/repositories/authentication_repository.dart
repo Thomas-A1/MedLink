@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:myapp/Landing/landing_page.dart';
 import 'package:myapp/authentication/screens/login/login.dart';
 import 'package:myapp/authentication/screens/onboarding/onboarding.dart';
@@ -44,16 +45,17 @@ class AuthenticationRepository extends GetxController {
   }
 
   /*---- Email & Password Sign-in */
-  Future<UserCredential> loginWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential> loginWithEmailAndPassword(
+      String email, String password) async {
     try {
-      return await _auth.signInWithEmailAndPassword(email: email, password: password);
+      return await _auth.signInWithEmailAndPassword(
+          email: email, password: password);
     } on FirebaseAuthException catch (e) {
       throw MFirebaseException(e.code).message;
     } catch (e) {
       throw 'Something went wrong. Please try again.';
     }
   }
-
 
   // EmailAuthentication - SignIn
 
@@ -82,6 +84,27 @@ class AuthenticationRepository extends GetxController {
   /*--- Federated Identity & Social Sign In */
 
   // GoogleAuthentication
+  Future<UserCredential?> signInwithGoogle() async {
+    try {
+      final GoogleSignInAccount? userAccont = await GoogleSignIn().signIn();
+
+      final GoogleSignInAuthentication? googleAuth =
+          await userAccont?.authentication;
+
+      // Create a new credential
+      final credentials = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
+
+      // Store data to firestore
+      return await _auth.signInWithCredential(credentials);
+    } on FirebaseAuthException catch (e) {
+      throw MFirebaseException(e.code).message;
+    } catch (e) {
+      throw 'Something went wrong. Please try again.';
+    }
+  }
 
   // FacebookAuthentication
 
