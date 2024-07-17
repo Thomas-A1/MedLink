@@ -12,6 +12,7 @@ import 'package:myapp/models/pharmacy_model.dart';
 import 'package:myapp/utils/loaders/loaders.dart';
 import 'package:myapp/widgets/CustomInfoWindow.dart';
 import 'package:custom_info_window/custom_info_window.dart';
+import 'package:myapp/Landing/Location_provider.dart';
 import 'package:myapp/authentication/screens/DrugSearch/drugsearch.dart';
 
 class LandingPage extends StatefulWidget {
@@ -20,6 +21,8 @@ class LandingPage extends StatefulWidget {
 }
 
 class _LandingPageState extends State<LandingPage> {
+final LocationController _LocationController = Get.find();
+
   Location _locationController = new Location();
   GoogleMapController? _mapController;
   final LatLng _initialPosition = const LatLng(5.7583804, -0.21917);
@@ -29,10 +32,13 @@ class _LandingPageState extends State<LandingPage> {
   Pharmacy? _selectedPharmacy;
   LatLng? _selectedPharmacyPosition;
   Offset? _infoWindowPosition;
-  CustomInfoWindowController _customInfoWindowController =
-      CustomInfoWindowController();
-  final RecentSearchesController _recentSearchesController =
-      Get.put(RecentSearchesController());
+  Set<String> _pharmacyMarkers = Set<String>();
+  CustomInfoWindowController _customInfoWindowController = CustomInfoWindowController();
+  final RecentSearchesController _recentSearchesController = Get.put(RecentSearchesController());
+  double _initialGeofenceRadius = 50.0; // Initial Radius of geofence in meters
+  Circle? _geofenceCircle;
+  double _currentZoom = 14.0;
+
 
   @override
   void initState() {
@@ -77,8 +83,9 @@ class _LandingPageState extends State<LandingPage> {
         setState(() {
           current_position =
               LatLng(currentLocation.latitude!, currentLocation.longitude!);
-          print(current_position);
+              _LocationController.updatePosition(current_position!);
           _updateCurrentLocationMarker("_currentLocation", current_position!);
+          _addGeofenceCircle(current_position!);
           // Do not move the camera here to allow free map movement
         });
       }
@@ -92,6 +99,7 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   void _moveToCurrentPosition() {
+    LatLng? currentPosition = _LocationController.currentPosition.value;
     if (current_position != null) {
       _mapController?.animateCamera(CameraUpdate.newLatLng(current_position!));
     } else {
@@ -102,9 +110,23 @@ class _LandingPageState extends State<LandingPage> {
     }
   }
 
+  // Geofence circle
+  void _addGeofenceCircle(LatLng location) {
+    setState(() {
+      _geofenceCircle = Circle(
+      circleId: CircleId("geofence"),
+      center: location,
+      radius: _initialGeofenceRadius,
+      fillColor: ui.Color.fromARGB(255, 202, 211, 220).withOpacity(0.6),
+      strokeColor: ui.Color.fromARGB(255, 202, 211, 220),
+      strokeWidth: 2,
+    );
+    });
+  }
+
   Future<void> _updateCurrentLocationMarker(String id, LatLng location) async {
     var customMarkerIcon = await _createCustomMarkerIconWithHighlight(
-        'assets/images/man.png', 80, 80, 100, Colors.blue, Colors.blue);
+        'assets/images/man.png', 50, 50, 65, Colors.blue, Colors.blue);
     var marker = Marker(
       markerId: MarkerId(id),
       position: location,
@@ -183,38 +205,42 @@ class _LandingPageState extends State<LandingPage> {
 
   // Custom Pharmacy Marker
   void _addPharmacyMarker(Pharmacy pharmacy) async {
-    var customMarkerIcon = await _createCustomMarkerIconWithHighlight(
-        'assets/images/drugstore.png',
-        105,
-        100,
-        140,
-        ui.Color.fromARGB(255, 227, 60, 60),
-        ui.Color.fromARGB(255, 227, 60, 60));
+  var customMarkerIcon = await _createCustomMarkerIconWithHighlight(
+      'assets/images/drugstore.png',
+      40,
+      40,
+      55,
+      ui.Color.fromARGB(255, 227, 60, 60),
+      ui.Color.fromARGB(255, 227, 60, 60));
 
-    var marker = Marker(
-      markerId: MarkerId(pharmacy.id),
-      position: pharmacy.location,
-      icon: customMarkerIcon,
-      onTap: () {
-        _customInfoWindowController.addInfoWindow!(
-          MCustomInfoWindow(
-            pharmacy: pharmacy,
-          ),
-          pharmacy.location,
-        );
+  var marker = Marker(
+    markerId: MarkerId(pharmacy.id),
+    position: pharmacy.location,
+    icon: customMarkerIcon,
+    // Set visibility based on the zoom level
+    visible: _currentZoom >= 14.0, // Adjusted based on your requirement
+    onTap: () {
+      _customInfoWindowController.addInfoWindow!(
+        MCustomInfoWindow(
+          pharmacy: pharmacy,
+        ),
+        pharmacy.location,
+      );
 
-        // Update the selected pharmacy and its position
-        setState(() {
-          _selectedPharmacy = pharmacy;
-          _selectedPharmacyPosition = pharmacy.location;
-        });
-      },
-    );
+      // Update the selected pharmacy and its position
+      setState(() {
+        _selectedPharmacy = pharmacy;
+        _selectedPharmacyPosition = pharmacy.location;
+      });
+    },
+  );
 
-    setState(() {
-      _markers[pharmacy.id] = marker;
-    });
-  }
+  setState(() {
+    _markers[pharmacy.id] = marker;
+    _pharmacyMarkers.add(pharmacy.id);
+  });
+}
+
 
   void _onMapTap(LatLng position) {
     setState(() {
@@ -222,6 +248,35 @@ class _LandingPageState extends State<LandingPage> {
       _selectedPharmacyPosition = null;
     });
   }
+
+// Function to decide the visibility of the pharmacy markers based on the zoom level
+void _updateMarkerVisibility() {
+  setState(() {
+    _markers.forEach((id, marker) {
+      // Check if the marker corresponds to a pharmacy
+      if (_pharmacyMarkers.contains(id)) {
+        _markers[id] = marker.copyWith(
+          visibleParam: _currentZoom >= 14.0,
+        );
+      }
+    });
+
+    // Update visibility of geofence circle
+    if (_currentZoom > 19.0) {
+      _geofenceCircle = Circle(
+        circleId: CircleId("geofence"),
+        center: current_position!,
+        radius: _initialGeofenceRadius,
+        fillColor: ui.Color.fromARGB(255, 202, 211, 220).withOpacity(0.6),
+        strokeColor: ui.Color.fromARGB(255, 202, 211, 220),
+        strokeWidth: 2,
+      );
+    } else {
+      _geofenceCircle = null;
+    }
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -234,7 +289,7 @@ class _LandingPageState extends State<LandingPage> {
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: _initialPosition,
-              zoom: 16.0,
+              zoom: 18.0,
             ),
             onMapCreated: (controller) {
               _mapController = controller;
@@ -242,14 +297,24 @@ class _LandingPageState extends State<LandingPage> {
               if (current_position != null) {
                 _updateCurrentLocationMarker(
                     "_currentLocation", current_position!);
+                _addGeofenceCircle(current_position!);
               }
             },
             markers: Set<Marker>.of(_markers.values),
+            circles: _geofenceCircle != null ? Set<Circle>.of([_geofenceCircle!]) : Set<Circle>(),
             onTap: (position) {
               _customInfoWindowController.hideInfoWindow!();
+              setState(() {
+                _selectedPharmacy = null;
+                _selectedPharmacyPosition = null;
+              });
             },
             onCameraMove: (position) {
               _customInfoWindowController.onCameraMove!();
+              setState(() {
+                _currentZoom = position.zoom;
+              });
+              _updateMarkerVisibility();
             },
           ),
           CustomInfoWindow(
@@ -346,7 +411,7 @@ class _LandingPageState extends State<LandingPage> {
                     child: Container(
                       height: 60, // Set the desired height here
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: ui.Color.fromARGB(240, 224, 224, 224),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -356,8 +421,8 @@ class _LandingPageState extends State<LandingPage> {
                                 const EdgeInsets.symmetric(horizontal: 8.0),
                             child: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
+                              decoration: const BoxDecoration(
+                                color: ui.Color.fromARGB(255, 238, 238, 238),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.search, size: 24),

@@ -7,6 +7,7 @@ import 'package:myapp/bindings/general_bindings.dart';
 import 'package:myapp/data/repositories/authentication_repository.dart';
 import 'package:myapp/data/repositories/pharmacies/pharmacy_repository.dart';
 import 'package:myapp/firebase_options.dart';
+import 'package:myapp/Landing/Location_provider.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 Future<void> main() async {
@@ -25,6 +26,7 @@ Future<void> main() async {
       .then((FirebaseApp value) {
     Get.put(AuthenticationRepository());
     Get.put(PharmacyRepository());
+    Get.put(LocationController()); // Added LocationProvider to make it accessible everywhere
   });
   runApp(const MyApp());
 }

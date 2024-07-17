@@ -4,7 +4,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:myapp/Geofencing/geocoding_location.dart';
 import 'package:myapp/authentication/controllers/RecentSearch/recentSearch_Controller.dart';
 import 'package:algolia/algolia.dart';
+import 'package:myapp/Landing/Location_provider.dart';
 import 'package:myapp/helpers/algolia_api.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class DrugSearch extends StatefulWidget {
   final String? initialSearch;
@@ -31,7 +33,8 @@ class _DrugSearchState extends State<DrugSearch> {
       _drugController.text = widget.initialSearch!;
     }
     // Fetch and set the user's current address
-    LatLng current_position = LatLng(5.759574, -0.220075);
+    LatLng current_position =
+        Get.find<LocationController>().currentPosition.value!;
     getAddressFromLatLng(current_position).then((address) {
       setState(() {
         _addressController.text = address;
@@ -83,7 +86,7 @@ class _DrugSearchState extends State<DrugSearch> {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: Color.fromARGB(255, 229, 228, 228),
+                color: const Color.fromARGB(255, 229, 228, 228),
                 borderRadius: BorderRadius.circular(8.0),
               ),
               child: TextField(
@@ -95,12 +98,26 @@ class _DrugSearchState extends State<DrugSearch> {
                     _isSearchFocused = false;
                   });
                 },
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.location_on),
+                decoration: InputDecoration(
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color.fromARGB(255, 188, 197, 224),
+                        shape: BoxShape.circle,
+                      ),
+                      child: SvgPicture.asset(
+                        'assets/images/current_location.svg',
+                        width: 24,
+                        height: 24,
+                      ),
+                    ),
+                  ),
                   hintText: 'Current Address',
                   border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 18.0),
                 ),
               ),
             ),
@@ -118,9 +135,21 @@ class _DrugSearchState extends State<DrugSearch> {
               ),
               child: TextField(
                 controller: _drugController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Search for a drug',
-                  prefixIcon: Icon(Icons.search),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color.fromARGB(
+                            255, 193, 191, 191), // Adjust color as needed
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.search,
+                          size: 24, color: Colors.white),
+                    ),
+                  ),
                   border: InputBorder.none,
                   contentPadding:
                       EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
