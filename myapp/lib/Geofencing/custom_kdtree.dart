@@ -108,3 +108,52 @@ class KDTree {
     return degree * pi / 180.0;
   }
 }
+
+
+
+
+
+// List<MPharmacy> searchWithinRadius(LatLng userLocation, double maxRadius, String requiredDrug) {
+//   List<MPharmacy> pharmaciesWithinRadius = [];
+//   _searchWithinRadius(root, userLocation, maxRadius, requiredDrug, pharmaciesWithinRadius, 0);
+//   if (pharmaciesWithinRadius.isNotEmpty) {
+//     return pharmaciesWithinRadius;
+//   } else {
+//     return []; // Return empty list if no pharmacies found within initial radius
+//   }
+// }
+
+// void _searchWithinRadius(KDNode? node, LatLng target, double maxRadius, String requiredDrug, List<MPharmacy> result, int depth) {
+//   if (node == null) return;
+
+//   double distance = calculateDistance(target.latitude, target.longitude, node.point.latitude, node.point.longitude);
+//   if (distance <= maxRadius && node.pharmacy.hasDrug(requiredDrug)) {
+//     result.add(node.pharmacy);
+//   }
+
+//   int axis = depth % 2;
+//   double diff = axis == 0
+//       ? target.latitude - node.point.latitude
+//       : target.longitude - node.point.longitude;
+
+//   if (diff <= 0) {
+//     _searchWithinRadius(node.left, target, maxRadius, requiredDrug, result, depth + 1);
+//     if (node.right != null && diff.abs() <= maxRadius) {
+//       _searchWithinRadius(node.right, target, maxRadius, requiredDrug, result, depth + 1);
+//     }
+//   } else {
+//     _searchWithinRadius(node.right, target, maxRadius, requiredDrug, result, depth + 1);
+//     if (node.left != null && diff.abs() <= maxRadius) {
+//       _searchWithinRadius(node.left, target, maxRadius, requiredDrug, result, depth + 1);
+//     }
+//   }
+
+//   // If no pharmacies found within the maximum radius and depth is beyond a certain limit, return a specific message or indicator
+//   if (result.isEmpty && distance > maxRadius && depth > 50) {
+//     result.add(MPharmacy(
+//       "No Pharmacy Found",
+//       LatLng(0, 0), // Adjust to your needs for indicating no result
+//       [],
+//     ));
+//   }
+// }

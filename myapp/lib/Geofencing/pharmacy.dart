@@ -15,6 +15,6 @@ class MPharmacy {
   MPharmacy({required this.name, required this.location, required this.drugs});
 
   bool hasDrug(String drugName) {
-    return drugs.any((drug) => drug.name == drugName && drug.quantity > 0);
+    return drugs.any((drug) => drug.name == drugName && drug.quantity >= 0);
   }
 }

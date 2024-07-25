@@ -14,6 +14,7 @@ import 'package:myapp/widgets/CustomInfoWindow.dart';
 import 'package:custom_info_window/custom_info_window.dart';
 import 'package:myapp/Landing/Location_provider.dart';
 import 'package:myapp/authentication/screens/DrugSearch/drugsearch.dart';
+import 'package:myapp/widgets/search_ripple.dart';
 
 class LandingPage extends StatefulWidget {
   @override
@@ -323,6 +324,14 @@ void _updateMarkerVisibility() {
             width: 260,
             offset: 40,
           ),
+          if (current_position != null)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: RippleAnimationWidget(position: current_position!),
+            ),
           Positioned(
             top: 50,
             left: 20,

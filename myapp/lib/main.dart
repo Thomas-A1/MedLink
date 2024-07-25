@@ -26,7 +26,7 @@ Future<void> main() async {
       .then((FirebaseApp value) {
     Get.put(AuthenticationRepository());
     Get.put(PharmacyRepository());
-    Get.put(LocationController()); // Added LocationProvider to make it accessible everywhere
+    Get.put(LocationController()); 
   });
   runApp(const MyApp());
 }
